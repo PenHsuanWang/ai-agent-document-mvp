@@ -8,6 +8,14 @@ A lightweight, production-quality AI Agent backend that lets users query and sum
 
 ## Architecture
 
+### Visual Blueprints
+
+![System Architecture](./architecture.png)
+*This diagram illustrates the high-level architecture of the AI Agent MVP. It highlights the flow from the user's natural language request to the FastAPI backend, which orchestrates the interaction with the Claude API. The diagram emphasizes the separation of concerns: the Agent Runtime manages the conversation loop, the Python tools are responsible for data retrieval from the local file system, and Claude handles the reasoning and summarization.*
+
+![Agentic Loop Sequence](./system-sequential-flow.png)
+*This sequence diagram details the chronological execution flow of the Agentic Loop. It demonstrates how the FastAPI backend acts as a bridge between the user and the LLM. When a tool call is required (e.g., to list or read files), the backend executes the local Python tool and feeds the result back to Claude. This recursive loop continues until Claude has sufficient context to generate the final summarized response.*
+
 ### C4 Context Diagram
 
 ```mermaid
@@ -96,6 +104,13 @@ User ──POST /api/v1/chat──▶ FastAPI Handler
                                  │
                     FastAPI returns ChatResponse JSON ──▶ User
 ```
+
+### Core Design Philosophy & Concept
+
+1. **Separation of Concerns (Tools vs. LLM)**: Python tools are strictly responsible for data retrieval (reading the file system). The LLM (Claude) handles all reasoning, summarization, and decision-making. Tools *do not* summarize.
+2. **The Agentic Loop**: The system utilizes a recursive loop. The backend intercepts Claude's tool requests (`stop_reason == "tool_use"`), executes the Python functions locally, and feeds the text results back to Claude. This continues until Claude has enough context to generate a final answer (`stop_reason == "end_turn"`).
+3. **Defensive Design & Self-Correction**: Tools are designed to be fault-tolerant. Instead of raising exceptions (which would crash the loop), errors (like a missing file) are caught and returned as plain text (e.g., `"Error: File not found"`). This allows Claude to read the error and autonomously attempt to correct its parameters.
+4. **Stateless Tools & State Management**: The tools and the Agent loop are inherently stateless. The conversational context (memory) is maintained entirely within the FastAPI in-memory session (`AgentSession`), keeping the architecture clean and horizontally scalable.
 
 ---
 
