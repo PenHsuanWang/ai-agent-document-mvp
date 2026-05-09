@@ -1,0 +1,37 @@
+Q1 2026 Performance Report — Acme Corp
+
+Executive Summary
+-----------------
+Q1 2026 saw strong revenue growth of 18% year-over-year, driven primarily by the expansion
+of our SaaS product line and a successful launch in the APAC region. Operating costs
+increased by only 7%, resulting in an improved EBITDA margin of 24% (up from 19% in Q1 2025).
+
+Key Highlights
+--------------
+- Total Revenue:        $4.2M  (Q1 2025: $3.56M)
+- Gross Profit:         $2.9M  (Gross Margin: 69%)
+- Operating Expenses:   $1.9M
+- EBITDA:               $1.0M  (Margin: 24%)
+- New Customers:        312    (up 40% QoQ)
+- Customer Churn Rate:  2.1%   (industry avg: 5.4%)
+
+Product Performance
+-------------------
+- AI Assistant Module:  $1.8M revenue, best-selling SKU for the third quarter in a row.
+- Data Pipeline Pro:    $1.1M revenue, 22% growth following v3.0 release.
+- Legacy Suite:         $1.3M revenue, stable but flat — migration campaign planned for Q2.
+
+Regional Breakdown
+------------------
+- North America:  52% of revenue ($2.18M)
+- Europe:         31% of revenue ($1.30M)
+- APAC (new):     17% of revenue ($0.72M) — exceeded launch target by 43%
+
+Risks & Outlook
+---------------
+1. Talent: Engineering headcount is 15% below plan; two senior hires are in final rounds.
+2. Competition: Two new entrants in the AI assistant market observed in Q1.
+3. Guidance: Q2 2026 revenue forecast is $4.6M–$4.9M, contingent on APAC retention.
+
+Prepared by: Finance & Strategy Team
+Date: April 15, 2026
