@@ -15,6 +15,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.chat import router as chat_router
+from app.api.v1.documents import router as documents_router
 from app.core.config import settings
 
 
@@ -68,6 +69,7 @@ def create_app() -> FastAPI:
 
     # Routers
     app.include_router(chat_router, prefix="/api/v1", tags=["chat"])
+    app.include_router(documents_router, prefix="/api/v1/documents", tags=["documents"])
 
     @app.get("/health", tags=["ops"], summary="Liveness probe")
     async def health():
