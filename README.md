@@ -1,8 +1,8 @@
 # AI Agent MVP — Local File Reader & Summarizer
 
-> **MVP Phase 1** · FastAPI · Anthropic Claude · Python 3.12 · `uv`
+> FastAPI · Anthropic Claude · React 19 · TypeScript · Python 3.12 · `uv`
 
-A lightweight, production-quality AI Agent backend that lets users query and summarise local documents in natural language.  Claude acts as the reasoning engine; Python tools handle all file I/O.
+A full-stack AI Agent that lets users upload, manage, and query local documents in natural language through a responsive web UI. Claude acts as the reasoning engine; Python tools handle all file I/O; React provides the chat interface.
 
 ---
 
@@ -22,14 +22,16 @@ A lightweight, production-quality AI Agent backend that lets users query and sum
 C4Context
     title System Context — AI Agent MVP
 
-    Person(user, "End User", "Sends natural language questions via API")
+    Person(user, "End User", "Interacts via browser or API client")
+    System(webui, "Web UI", "React 19 + TypeScript SPA — chat interface and document management")
     System(agent, "AI Agent Backend", "FastAPI service that orchestrates Claude + local file tools")
     System_Ext(claude, "Claude API (Anthropic)", "LLM that reasons, decides tool calls, and generates answers")
     System_Ext(fs, "Local Filesystem (./local_data/)", "Sandboxed directory containing target documents")
 
-    Rel(user, agent, "POST /api/v1/chat", "HTTPS / JSON")
+    Rel(user, webui, "Uses browser")
+    Rel(webui, agent, "POST /api/v1/chat · GET|POST|DELETE /api/v1/documents", "HTTP / JSON")
     Rel(agent, claude, "messages.create() + tool schemas", "Anthropic Python SDK")
-    Rel(agent, fs, "list / read files", "pathlib (sandboxed)")
+    Rel(agent, fs, "list / read / write / delete files", "pathlib (sandboxed)")
     Rel(claude, agent, "stop_reason: tool_use | end_turn", "Anthropic Python SDK")
 ```
 
@@ -72,6 +74,22 @@ classDiagram
     class ChatResponse {
         +str response
         +str status
+    }
+
+    class UploadResponse {
+        +str filename
+        +int size_bytes
+        +str status
+    }
+
+    class DeleteResponse {
+        +str filename
+        +str status
+    }
+
+    class ListResponse {
+        +list~str~ documents
+        +int total
     }
 
     InMemorySessionStore "1" --> "N" AgentSession : stores
@@ -124,21 +142,36 @@ ai-agent-mvp/
 ├── local_data/            # sandboxed document directory
 │   ├── sample_report.txt
 │   └── getting_started.md
-└── app/
-    ├── main.py            # FastAPI app factory + lifespan
-    ├── core/
-    │   └── config.py      # pydantic-settings (SecretStr for API key)
-    ├── domain/
-    │   ├── models.py      # AgentSession dataclass (zero external deps)
-    │   └── exceptions.py  # Typed error hierarchy
-    ├── api/v1/
-    │   └── chat.py        # POST /api/v1/chat handler (thin, no business logic)
-    ├── schemas/
-    │   └── chat.py        # ChatRequest / ChatResponse Pydantic models
-    └── services/
-        ├── agent.py       # AgentService — agentic loop
-        ├── memory.py      # InMemorySessionStore (swap to Redis later)
-        └── tools.py       # Tool definitions + registry (OCP-compliant)
+├── app/                   # FastAPI backend
+│   ├── main.py            # FastAPI app factory + lifespan
+│   ├── core/
+│   │   └── config.py      # pydantic-settings (SecretStr for API key)
+│   ├── domain/
+│   │   ├── models.py      # AgentSession dataclass (zero external deps)
+│   │   └── exceptions.py  # Typed error hierarchy
+│   ├── api/v1/
+│   │   ├── chat.py        # POST /api/v1/chat handler
+│   │   └── documents.py   # GET|POST|DELETE /api/v1/documents handlers
+│   ├── schemas/
+│   │   ├── chat.py        # ChatRequest / ChatResponse Pydantic models
+│   │   └── documents.py   # ListResponse / UploadResponse / DeleteResponse
+│   └── services/
+│       ├── agent.py       # AgentService — agentic loop
+│       ├── memory.py      # InMemorySessionStore (swap to Redis later)
+│       └── tools.py       # Tool definitions + registry (OCP-compliant)
+└── web-ui/                # React 19 + TypeScript frontend
+    ├── index.html
+    ├── vite.config.ts     # Vite + Tailwind CSS v4 + /api proxy → :8000
+    ├── package.json
+    └── src/
+        ├── main.tsx       # App entry, QueryClientProvider
+        ├── App.tsx        # Root layout — responsive sidebar + chat
+        ├── types/         # Shared TypeScript interfaces
+        ├── api/           # Fetch wrappers for documents & chat endpoints
+        ├── hooks/         # useDocuments (TanStack Query) · useChat (useState)
+        └── components/
+            ├── Sidebar/   # Document list, upload button, delete with confirm
+            └── Chat/      # ChatArea, ChatMessage (markdown), MessageInput, TypingIndicator
 ```
 
 ---
@@ -147,33 +180,52 @@ ai-agent-mvp/
 
 ### Prerequisites
 - Python 3.12+
+- Node.js 20+
 - [`uv`](https://docs.astral.sh/uv/) installed
 - An Anthropic API key
 
-### Setup
+### Backend setup
 
 ```bash
-# 1. Clone and enter the project
+# 1. Enter the project
 cd ai-agent-mvp
 
-# 2. Install dependencies with uv
+# 2. Install Python dependencies
 uv sync
 
 # 3. Configure environment
 cp .env.example .env
 # Edit .env and set ANTHROPIC_API_KEY=sk-ant-...
 
-# 4. Run the server
+# 4. Run the backend server
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
-### Try it out
+### Frontend setup
+
+```bash
+# In a second terminal
+cd ai-agent-mvp/web-ui
+npm install
+npm run dev          # opens at http://localhost:5173
+```
+
+The Vite dev server proxies all `/api` requests to `http://localhost:8000`, so no CORS configuration is needed.
+
+### Try the API directly
 
 ```bash
 # Health check
 curl http://localhost:8000/health
 
-# Discover available documents
+# List uploaded documents
+curl http://localhost:8000/api/v1/documents
+
+# Upload a document
+curl -X POST http://localhost:8000/api/v1/documents \
+  -F "file=@local_data/sample_report.txt"
+
+# Ask a question
 curl -X POST http://localhost:8000/api/v1/chat \
   -H "Content-Type: application/json" \
   -d '{"session_id": "demo-1", "user_message": "What documents do you have?"}'
@@ -208,6 +260,47 @@ Open [http://localhost:8000/docs](http://localhost:8000/docs) in your browser.
 ```json
 { "response": "Claude's final answer...", "status": "success" }
 ```
+
+---
+
+### `GET /api/v1/documents`
+
+Returns a sorted list of all documents in the `local_data/` directory.
+
+**Response:**
+```json
+{ "documents": ["getting_started.md", "sample_report.txt"], "total": 2 }
+```
+
+---
+
+### `POST /api/v1/documents`
+
+Upload a new plain-text document (`.txt`, `.md`, `.csv`). Documents are **immutable** — uploading a file that already exists returns `409 Conflict`. Delete it first if a replacement is needed.
+
+**Body:** `multipart/form-data` with a `file` field.
+
+**Response `201`:**
+```json
+{ "filename": "report.txt", "size_bytes": 1024, "status": "uploaded" }
+```
+
+**Error codes:** `400` invalid filename · `409` already exists · `415` unsupported extension · `422` non-UTF-8 content
+
+---
+
+### `DELETE /api/v1/documents/{filename}`
+
+Permanently remove a document from the store.
+
+**Response `200`:**
+```json
+{ "filename": "report.txt", "status": "deleted" }
+```
+
+**Error codes:** `400` invalid filename · `404` not found
+
+---
 
 ### `GET /health`
 Liveness probe. Returns `{ "status": "ok", "env": "development" }`.
@@ -254,4 +347,3 @@ No other file needs to change (Open/Closed Principle).
 - User authentication & authorization
 - PDF / image / Word document parsing
 - Streaming responses (SSE / WebSocket)
-- Frontend UI
