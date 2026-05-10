@@ -1,6 +1,7 @@
 """Local filesystem tool definitions (Infrastructure layer).
 
 Design principles enforced here:
+
 - Tools NEVER raise exceptions — all errors are returned as "Error: ..." strings
   so Claude can self-correct without crashing the agent loop.
 - Path security: every file access is validated with pathlib.Path.resolve() to

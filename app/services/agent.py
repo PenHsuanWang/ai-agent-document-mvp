@@ -5,6 +5,7 @@ pattern: call Claude → check stop_reason → execute tool if needed → loop u
 the model issues end_turn with a final text answer.
 
 Design highlights:
+
 - AgentService has no knowledge of HTTP, sessions stores, or file systems.
   It receives an AgentSession (domain object) and returns a string.
 - All message history mutations happen here so the API handler stays clean.

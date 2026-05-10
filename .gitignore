@@ -38,3 +38,6 @@ htmlcov/
 
 # Logs
 *.log
+
+# Sphinx docs build output
+docs/_build/
